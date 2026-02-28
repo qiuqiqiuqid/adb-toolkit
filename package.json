@@ -9,7 +9,11 @@
     "build": "electron-builder --win",
     "pack": "electron-builder --dir"
   },
-  "author": "ADB Toolkit",
+  "author": "qiuqiqiuqid <3464767775@qq.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qiuqiqiuqid/adb-toolkit.git"
+  },
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.0.0",

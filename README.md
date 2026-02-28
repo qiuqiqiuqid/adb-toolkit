@@ -75,4 +75,10 @@ GNU General Public License v3.0 (GPLv3)
 
 ## 作者
 
-ADB Toolkit Team
+[qiuqiqiuqid](https://github.com/qiuqiqiuqid)
+
+## 致谢
+
+本项目借助 [opencode](https://opencode.ai) AI 编程助手开发。
+
+## 许可证

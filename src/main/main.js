@@ -1,3 +1,10 @@
+/**
+ * ADB Toolkit
+ * 作者: qiuqiqiuqid
+ * 仓库: https://github.com/qiuqiqiuqid/adb-toolkit
+ * 借助 opencode (https://opencode.ai) 开发
+ */
+
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const log = require('electron-log');
