@@ -2,6 +2,8 @@ let currentDevice = null;
 let currentPath = '/sdcard';
 let scrcpyRunning = false;
 let appsCache = [];
+// Per-device root state cache for UI
+let rootState = {};
 
 document.addEventListener('DOMContentLoaded', () => {
   initNavigation();
@@ -80,14 +82,44 @@ function renderDeviceList(devices) {
 
 async function selectDevice(serial) {
   currentDevice = { serial };
+  rootState[serial] = { enabled: false, available: false };
   
   document.querySelectorAll('.device-card').forEach(c => c.classList.remove('selected'));
   document.querySelector(`[data-serial="${serial}"]`).classList.add('selected');
   
   const info = await window.api.adb.getDeviceInfo(serial);
+  // Probe root capability for this device
+  try {
+    const can = await window.api.adb.canRoot(serial);
+    rootState[serial].available = !!can;
+  } catch (e) {
+    rootState[serial].available = false;
+  }
   renderDeviceInfo(info);
   
   showToast('已选择设备', 'success');
+  // Bind root toggle if present
+  const rootToggle = document.getElementById('root-toggle');
+  if (rootToggle) {
+    rootToggle.disabled = !rootState[serial]?.available;
+    rootToggle.checked = !!rootState[serial]?.enabled;
+    // Bind one-time listener
+    rootToggle.addEventListener('change', async (e) => {
+      if (e.target.checked) {
+        const r = await window.api.adb.enableRoot(serial);
+        if (r && r.enabled) {
+          rootState[serial].enabled = true;
+          showToast('Root 已启用', 'success');
+        } else {
+          showToast('无法启用 Root: ' + (r?.message || ''), 'error');
+          e.target.checked = false;
+        }
+      } else {
+        rootState[serial].enabled = false;
+        showToast('Root 已禁用', 'info');
+      }
+    }, { once: true });
+  }
 }
 
 function renderDeviceInfo(info) {
@@ -136,6 +168,12 @@ function renderDeviceInfo(info) {
     <div class="info-item">
       <div class="info-label">序列号</div>
       <div class="info-value">${info.serialNumber || 'Unknown'}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Root 模式</div>
+      <div class="info-value" id="root-toggle-container">
+        <input type="checkbox" id="root-toggle"> 启用 Root
+      </div>
     </div>
     <div class="info-item">
       <div class="info-label">Bootloader</div>

@@ -7,6 +7,9 @@ class AdbClient {
     this.binPath = binPath;
     this.adbPath = path.join(binPath, 'adb.exe');
     this.fastbootPath = path.join(binPath, 'fastboot.exe');
+    // Root feature state per device
+    this.rootCapability = {}; // whether device can be root (su) on this board
+    this.rootEnabled = {}; // whether user enabled root for this device
   }
 
   async runCommand(cmd, args = [], options = {}) {
@@ -28,6 +31,76 @@ class AdbClient {
 
       proc.on('error', (err) => { reject(err); });
     });
+  }
+
+  // Root related helpers
+  async canRoot(serial) {
+    try {
+      // Try a simple root-protected command
+      await this.runCommand(this.adbPath, ['-s', serial, 'shell', 'su', '-c', 'id']);
+      this.rootCapability[serial] = true;
+      this.rootEnabled[serial] = false;
+      return true;
+    } catch (error) {
+      this.rootCapability[serial] = false;
+      this.rootEnabled[serial] = false;
+      return false;
+    }
+  }
+
+  async enableRoot(serial) {
+    // Enable root usage if capability is present
+    if (!this.rootCapability[serial]) {
+      // Try to detect again in case user connected earlier
+      const ok = await this.canRoot(serial);
+      if (!ok) {
+        return { success: false, message: 'Root 权限不可用' };
+      }
+    }
+    this.rootEnabled[serial] = true;
+    return { success: true, enabled: true };
+  }
+
+  async runRootCommand(serial, cmd, args = []) {
+    if (this.rootEnabled[serial]) {
+      const full = [cmd, ...args].join(' ');
+      return await this.runCommand(this.adbPath, ['-s', serial, 'shell', 'su', '-c', full]);
+    }
+    // Fallback to non-root execution if not enabled (best-effort)
+    return await this.runCommand(this.adbPath, ['-s', serial, 'shell', cmd, ...args]);
+  }
+
+  async runShScriptRoot(serial, scriptPath) {
+    if (!this.rootEnabled[serial]) {
+      throw new Error('Root 未启用');
+    }
+    const remote = '/data/local/tmp/root_script.sh';
+    await this.pushFile(serial, scriptPath, remote);
+    await this.runCommand(this.adbPath, ['-s', serial, 'shell', 'chmod', '+x', remote]);
+    const output = await this.runRootCommand(serial, 'sh', [remote]);
+    return { success: true, output };
+  }
+
+  async listFilesRoot(serial, remotePath) {
+    if (this.rootEnabled[serial] && this.rootCapability[serial]) {
+      const output = await this.runRootCommand(serial, 'ls', ['-la', remotePath]);
+      // Basic parsing to a simple array of objects
+      const lines = output.split('\n').filter(l => l.trim());
+      const files = lines.map(line => {
+        const parts = line.split(/\s+/);
+        const name = parts.slice(8).join(' ');
+        const isDir = parts[0].startsWith('d');
+        return { name, isDir, size: parts[4], date: parts[5] + ' ' + parts[6] };
+      });
+      return files;
+    }
+    // Fallback to normal list
+    return await this.listFiles(serial, remotePath);
+  }
+
+  async pushFileRoot(serial, localPath, remotePath) {
+    // If root enabled, still use adb push; root is required for some paths
+    return await this.pushFile(serial, localPath, remotePath);
   }
 
   async getDevices() {

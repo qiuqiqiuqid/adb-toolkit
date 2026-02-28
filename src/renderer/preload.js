@@ -44,6 +44,14 @@ contextBridge.exposeInMainWorld('api', {
     start: (serial, options) => ipcRenderer.invoke('scrcpy:start', serial, options),
     stop: () => ipcRenderer.invoke('scrcpy:stop')
   },
+  root: {
+    can: (serial) => ipcRenderer.invoke('adb:rootCan', serial),
+    enable: (serial) => ipcRenderer.invoke('adb:rootEnable', serial),
+    run: (serial, cmd, args) => ipcRenderer.invoke('adb:rootRun', serial, cmd, args),
+    runScript: (serial, scriptPath) => ipcRenderer.invoke('adb:rootRunScript', serial, scriptPath),
+    pushFile: (serial, local, remote) => ipcRenderer.invoke('adb:pushFileRoot', serial, local, remote),
+    listFiles: (serial, remote) => ipcRenderer.invoke('adb:listFilesRoot', serial, remote)
+  },
   dialog: {
     openFile: (filters) => ipcRenderer.invoke('dialog:openFile', filters),
     openFiles: (filters) => ipcRenderer.invoke('dialog:openFiles', filters),

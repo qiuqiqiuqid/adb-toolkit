@@ -98,6 +98,52 @@ ipcMain.handle('adb:getDeviceInfo', async (event, serial) => {
   }
 });
 
+// Root related IPCs
+ipcMain.handle('adb:rootEnable', async (event, serial) => {
+  try {
+    return await adbClient.enableRoot(serial);
+  } catch (error) {
+    log.error('Root enable error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('adb:rootCan', async (event, serial) => {
+  try {
+    return await adbClient.canRoot(serial);
+  } catch (error) {
+    log.error('Root can error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('adb:rootRun', async (event, serial, cmd, args) => {
+  try {
+    return await adbClient.runRootCommand(serial, cmd, args || []);
+  } catch (error) {
+    log.error('Root run error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('adb:rootRunScript', async (event, serial, scriptPath) => {
+  try {
+    return await adbClient.runShScriptRoot(serial, scriptPath);
+  } catch (error) {
+    log.error('Root run script error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('adb:pushFileRoot', async (event, serial, localPath, remotePath) => {
+  try {
+    return await adbClient.pushFileRoot(serial, localPath, remotePath);
+  } catch (error) {
+    log.error('Root push file error:', error);
+    return { error: error.message };
+  }
+});
+
 ipcMain.handle('adb:installApk', async (event, serial, filePath) => {
   try {
     return await adbClient.installApk(serial, filePath);
