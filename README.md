@@ -1,109 +1,135 @@
-# ADB Toolkit
+# ADB Toolkit - 高级ADB工具箱
 
-一个功能强大的 ADB & Fastboot 工具箱，基于 Electron 开发，支持屏幕投屏、应用管理、文件管理等核心功能。
+## 🚀 功能特性
 
-## 功能特性
+### 🔧 ADB核心功能
+- ✅ 设备连接管理 (USB/Wi-Fi)
+- ✅ 设备信息查看
+- ✅ 文件管理 (推送/拉取)
+- ✅ 应用管理 (安装/卸载/启动)
+- ✅ Shell命令执行
+- ✅ 屏幕截图
+- ✅ 设备重启 (Recovery/Bootloader)
 
-### 📱 设备管理
-- 自动检测连接的 Android 设备
-- 显示设备详细信息（型号、品牌、设备名、Android版本、SDK版本、分辨率、显示密度、电量、存储空间、内存、序列号、Bootloader版本、CPU架构等）
+### 🗄️ 高级功能
+- ✅ **Root模式** - 切换设备root权限
+- ✅ **无线调试** - ADB over Wi-Fi连接
+- ✅ **Shizuku激活** - 系统级ADB权限管理
+- ✅ **Fastboot支持** - 刷机工具
+- ✅ **屏幕投射** - 实时显示设备屏幕
 
-### 📦 应用管理
-- 查看所有已安装的第三方应用
-- 安装 APK（单选/批量多选）
-- 卸载应用（支持保留数据卸载）
-- 批量卸载（勾选多个应用一键删除）
-- 冻结/停用应用
+### 🎨 用户界面
+- ✅ 现代化桌面应用
+- ✅ 实时设备状态显示
+- ✅ 拖拽文件上传
+- ✅ 一键操作按钮
+- ✅ 多设备管理
 
-### 📁 文件管理
-- 浏览设备文件系统
-- 上传文件到设备
-- 支持常用目录导航
+## 📁 项目结构
 
-### 🖥️ 屏幕功能
-- **投屏**：基于 scrcpy 的高质量投屏，支持自定义帧率（30/60/90 FPS）、码率和分辨率
-- **分辨率设置**：自定义屏幕分辨率
-- **显示密度设置**：自定义 DPI
-- **一键重置**：快速恢复默认设置
+```
+├── src/
+│   ├── main/
+│   │   ├── adb.js          # ADB核心逻辑
+│   │   └── main.js         # 主进程
+│   ├── renderer/
+│   │   ├── js/
+│   │   │   └── app.js      # 渲染进程
+│   │   ├── preload.js      # 预加载脚本
+│   │   └── index.html      # 主界面
+│   └── bin/
+│       ├── adb.exe          # ADB二进制文件
+│       ├── fastboot.exe     # Fastboot二进制文件
+│       └── scrcpy.exe       # 屏幕投射工具
+├── dist/                   # 构建输出目录
+├── package.json           # 项目配置
+├── CHANGELOG.md          # 更新日志
+└── README.md            # 本文档
+```
 
-### 🔧 工具箱
-- 截图功能
-- Shell 命令执行
-- 设备重启（正常/Recovery/Bootloader）
+## 🚀 快速开始
 
-### ⚡ Fastboot 专区
-- Fastboot 设备检测
-- 重启到各种模式
-- 解锁命令：flashing unlock / oem unlock
-- 加锁命令：flashing lock / oem lock
-- 刷入分区：boot / initboot / 自定义分区
-- Fastboot 命令行
+### 系统要求
+- Windows 7/8/10/11
+- .NET Framework 4.0+
+- ADB驱动程序
 
-## 界面预览
+### 安装
+1. 下载最新版本
+2. 解压到任意目录
+3. 运行 `ADB Toolkit.exe`
 
-现代化深色主题界面，直观易用。
+### 使用方法
+1. 连接设备 (USB或Wi-Fi)
+2. 等待设备检测
+3. 选择需要的功能
+4. 点击对应按钮执行操作
 
-## 技术栈
+## 🛠️ 功能说明
 
-- **前端**: HTML5, CSS3, JavaScript
-- **后端**: Node.js, Electron
-- **核心工具**: ADB, Fastboot, scrcpy
+### Root模式
+- 检测设备是否已root
+- 切换root权限状态
+- 支持需要root权限的命令
 
-## 构建
+### 无线调试
+- 启用ADB over Wi-Fi
+- 通过IP地址连接设备
+- 断开无线连接
 
+### Shizuku激活
+- 安装Shizuku服务
+- 激活系统级ADB权限
+- 提升设备管理能力
+
+### 屏幕投射
+- 实时显示设备屏幕
+- 支持高清投射
+- 可保存截图
+
+## 🔧 快捷键
+
+- `F5` - 刷新设备列表
+- `Ctrl+S` - 保存当前设置
+- `Ctrl+O` - 打开文件
+- `Ctrl+Shift+R` - 重新加载应用
+
+## 📚 开发文档
+
+### 构建项目
 ```bash
-# 安装依赖
 npm install
-
-# 开发模式运行
-npm start
-
-# 构建 Windows 应用
 npm run build
 ```
 
-## 版本历史
+### 运行开发环境
+```bash
+npm run dev
+```
 
-### v1.0.2 (2026-02-28)
-- 新增Root模式（切换设备root权限）
-- 新增无线调试（ADB over Wi-Fi）
-- 新增Shizuku激活（系统级ADB权限管理）
-- 优化用户界面布局
-- 优化设备检测功能
-- 增强错误处理和反馈
-- 优化性能并减少内存开销
-- 优化文档和注释
+### 打包发行版
+```bash
+npm run package
+```
 
-### v1.0.1 (2026-02-28)
-- 新增批量安装 APK 功能
-- 新增保留数据卸载功能
-- 新增批量卸载功能
-- 设备信息增加更多内容（设备名、CPU、存储、内存等）
-- 屏幕功能增加分辨率/密度设置
-- Fastboot 专区增加解锁/加锁命令
-- 新增刷入分区功能（boot/initboot/自定义）
-- 新增 Fastboot 命令行功能
-- 代码精简优化
+## 📝 更新日志
 
-### v1.0.0-test (2026-02-28)
-- 初始测试版本
-- 设备管理功能
-- 应用程序管理功能（安装/卸载/冻结）
-- 文件管理功能
-- 屏幕投屏功能（scrcpy）
-- 工具箱功能
-- Fastboot 工具
+请查看 [CHANGELOG.md](CHANGELOG.md) 了解版本更新详情
 
-## 许可证
+## 🤝 贡献代码
 
-GNU General Public License v3.0 (GPLv3)
+欢迎提交Issue和Pull Request
 
-详见 [LICENSE](LICENSE) 文件。
+## 📄 许可证
 
-## 作者
+MIT License
 
-[qiuqiqiuqid](https://github.com/qiuqiqiuqid)
+## 📞 联系方式
 
-## 致谢
+- GitHub: https://github.com/qiuqiqiuqid/adb-toolkit
+- Issues: https://github.com/qiuqiqiuqid/adb-toolkit/issues
 
-本项目借助 [opencode](https://opencode.ai) AI 编程助手开发。
+---
+
+*版本: v1.0.3*
+*最后更新: 2026年2月28日*
