@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+  <title>ADB Toolbox</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="logo">
+        <span class="logo-icon">📱</span>
+        <span class="logo-text">ADB Toolbox</span>
+      </div>
+      
+      <nav class="nav-menu">
+        <button class="nav-item active" data-page="devices">
+          <span class="nav-icon">📱</span>
+          <span class="nav-text">设备管理</span>
+        </button>
+        <button class="nav-item" data-page="apps">
+          <span class="nav-icon">📦</span>
+          <span class="nav-text">应用管理</span>
+        </button>
+        <button class="nav-item" data-page="files">
+          <span class="nav-icon">📁</span>
+          <span class="nav-text">文件管理</span>
+        </button>
+        <button class="nav-item" data-page="scrcpy">
+          <span class="nav-icon">🖥️</span>
+          <span class="nav-text">屏幕投屏</span>
+        </button>
+        <button class="nav-item" data-page="tools">
+          <span class="nav-icon">🔧</span>
+          <span class="nav-text">工具箱</span>
+        </button>
+        <button class="nav-item" data-page="fastboot">
+          <span class="nav-icon">⚡</span>
+          <span class="nav-text">Fastboot</span>
+        </button>
+        <button class="nav-item" data-page="settings">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-text">设置</span>
+        </button>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div class="version">v1.0.0</div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <!-- 设备管理页面 -->
+      <section id="page-devices" class="page active">
+        <header class="page-header">
+          <h1>📱 设备管理</h1>
+          <button id="btn-refresh-devices" class="btn btn-primary">
+            <span>🔄</span> 刷新
+          </button>
+        </header>
+        
+        <div class="device-list" id="device-list">
+          <div class="empty-state">
+            <span class="empty-icon">🔌</span>
+            <p>未检测到设备，请连接 Android 设备</p>
+          </div>
+        </div>
+
+        <div class="device-info" id="device-info" style="display: none;">
+          <h2>设备信息</h2>
+          <div class="info-grid" id="info-grid"></div>
+        </div>
+      </section>
+
+      <!-- 应用管理页面 -->
+      <section id="page-apps" class="page">
+        <header class="page-header">
+          <h1>📦 应用管理</h1>
+          <div class="header-actions">
+            <button id="btn-install-app" class="btn btn-success">
+              <span>➕</span> 安装应用
+            </button>
+            <button id="btn-refresh-apps" class="btn btn-primary">
+              <span>🔄</span> 刷新
+            </button>
+          </div>
+        </header>
+
+        <div class="search-bar">
+          <input type="text" id="app-search" class="input" placeholder="搜索应用...">
+        </div>
+
+        <div class="apps-grid" id="apps-grid">
+          <div class="empty-state">
+            <span class="empty-icon">📦</span>
+            <p>选择设备后查看应用列表</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 文件管理页面 -->
+      <section id="page-files" class="page">
+        <header class="page-header">
+          <h1>📁 文件管理</h1>
+          <div class="header-actions">
+            <button id="btn-upload-file" class="btn btn-primary">
+              <span>⬆️</span> 上传文件
+            </button>
+            <button id="btn-refresh-files" class="btn btn-primary">
+              <span>🔄</span> 刷新
+            </button>
+          </div>
+        </header>
+
+        <div class="breadcrumbs" id="breadcrumbs">
+          <span>/sdcard</span>
+        </div>
+
+        <div class="file-list" id="file-list">
+          <div class="empty-state">
+            <span class="empty-icon">📁</span>
+            <p>选择设备后浏览文件</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 屏幕投屏页面 -->
+      <section id="page-scrcpy" class="page">
+        <header class="page-header">
+          <h1>🖥️ 屏幕投屏</h1>
+        </header>
+
+        <div class="scrcpy-controls">
+          <div class="control-group">
+            <label>帧率</label>
+            <select id="scrcpy-fps">
+              <option value="30">30 FPS</option>
+              <option value="60" selected>60 FPS</option>
+              <option value="90">90 FPS</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label>码率</label>
+            <select id="scrcpy-bitrate">
+              <option value="4">4 Mbps</option>
+              <option value="8" selected>8 Mbps</option>
+              <option value="16">16 Mbps</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label>分辨率</label>
+            <select id="scrcpy-size">
+              <option value="720">720p</option>
+              <option value="1080" selected>1080p</option>
+              <option value="1440">1440p</option>
+            </select>
+          </div>
+
+          <button id="btn-start-scrcpy" class="btn btn-success btn-large">
+            <span>▶️</span> 启动投屏
+          </button>
+
+          <button id="btn-stop-scrcpy" class="btn btn-danger btn-large" style="display: none;">
+            <span>⏹️</span> 停止投屏
+          </button>
+        </div>
+
+        <div class="scrcpy-status" id="scrcpy-status">
+          <p>选择设备后启动投屏</p>
+        </div>
+      </section>
+
+      <!-- 工具箱页面 -->
+      <section id="page-tools" class="page">
+        <header class="page-header">
+          <h1>🔧 工具箱</h1>
+        </header>
+
+        <div class="tools-grid">
+          <div class="tool-card" data-tool="screenshot">
+            <div class="tool-icon">📸</div>
+            <div class="tool-name">截图</div>
+            <div class="tool-desc">截取设备屏幕并保存</div>
+          </div>
+
+          <div class="tool-card" data-tool="shell">
+            <div class="tool-icon">💻</div>
+            <div class="tool-name">Shell 命令</div>
+            <div class="tool-desc">执行 ADB 命令</div>
+          </div>
+
+          <div class="tool-card" data-tool="reboot">
+            <div class="tool-icon">🔄</div>
+            <div class="tool-name">重启设备</div>
+            <div class="tool-desc">重启/进入恢复模式</div>
+          </div>
+        </div>
+
+        <div id="tool-panel" class="tool-panel" style="display: none;"></div>
+      </section>
+
+      <!-- Fastboot 页面 -->
+      <section id="page-fastboot" class="page">
+        <header class="page-header">
+          <h1>⚡ Fastboot 工具</h1>
+        </header>
+
+        <div class="fastboot-devices" id="fastboot-devices">
+          <button id="btn-scan-fastboot" class="btn btn-primary">
+            <span>🔍</span> 扫描 Fastboot 设备
+          </button>
+        </div>
+
+        <div class="fastboot-actions" id="fastboot-actions" style="display: none;">
+          <button class="btn btn-warning" data-action="reboot">重启</button>
+          <button class="btn btn-warning" data-action="recovery">重启到 Recovery</button>
+          <button class="btn btn-warning" data-action="bootloader">重启到 Bootloader</button>
+        </div>
+      </section>
+
+      <!-- 设置页面 -->
+      <section id="page-settings" class="page">
+        <header class="page-header">
+          <h1>⚙️ 设置</h1>
+        </header>
+
+        <div class="settings-section">
+          <h2>关于</h2>
+          <p class="app-name">ADB Toolbox</p>
+          <p class="app-version">版本 1.0.0</p>
+          <p class="app-desc">基于 Electron + scrcpy</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
