@@ -82,6 +82,12 @@
             <button id="btn-install-app" class="btn btn-success">
               <span>➕</span> 安装应用
             </button>
+            <button id="btn-install-apps" class="btn btn-success">
+              <span>📁</span> 批量安装
+            </button>
+            <button id="btn-batch-uninstall" class="btn btn-danger">
+              <span>🗑️</span> 批量卸载
+            </button>
             <button id="btn-refresh-apps" class="btn btn-primary">
               <span>🔄</span> 刷新
             </button>
@@ -90,6 +96,13 @@
 
         <div class="search-bar">
           <input type="text" id="app-search" class="input" placeholder="搜索应用...">
+        </div>
+
+        <div class="batch-progress" id="batch-progress" style="display: none;">
+          <div class="progress-text" id="batch-progress-text">处理中...</div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="batch-progress-bar"></div>
+          </div>
         </div>
 
         <div class="apps-grid" id="apps-grid">
@@ -129,10 +142,11 @@
       <!-- 屏幕投屏页面 -->
       <section id="page-scrcpy" class="page">
         <header class="page-header">
-          <h1>🖥️ 屏幕投屏</h1>
+          <h1>🖥️ 屏幕功能</h1>
         </header>
 
         <div class="scrcpy-controls">
+          <h3>投屏设置</h3>
           <div class="control-group">
             <label>帧率</label>
             <select id="scrcpy-fps">
@@ -172,6 +186,29 @@
         <div class="scrcpy-status" id="scrcpy-status">
           <p>选择设备后启动投屏</p>
         </div>
+
+        <div class="screen-settings">
+          <h3>屏幕设置</h3>
+          <div class="control-group">
+            <label>分辨率 (宽 x 高)</label>
+            <div class="input-group">
+              <input type="number" id="resolution-width" class="input" placeholder="宽" style="width: 80px;">
+              <span>x</span>
+              <input type="number" id="resolution-height" class="input" placeholder="高" style="width: 80px;">
+              <button id="btn-set-resolution" class="btn btn-primary">设置</button>
+              <button id="btn-reset-resolution" class="btn btn-secondary">重置</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label>显示密度 (DPI)</label>
+            <div class="input-group">
+              <input type="number" id="density-value" class="input" placeholder="如: 320">
+              <button id="btn-set-density" class="btn btn-primary">设置</button>
+              <button id="btn-reset-density" class="btn btn-secondary">重置</button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- 工具箱页面 -->
@@ -206,7 +243,7 @@
       <!-- Fastboot 页面 -->
       <section id="page-fastboot" class="page">
         <header class="page-header">
-          <h1>⚡ Fastboot 工具</h1>
+          <h1>⚡ Fastboot 专区</h1>
         </header>
 
         <div class="fastboot-devices" id="fastboot-devices">
@@ -216,9 +253,38 @@
         </div>
 
         <div class="fastboot-actions" id="fastboot-actions" style="display: none;">
-          <button class="btn btn-warning" data-action="reboot">重启</button>
-          <button class="btn btn-warning" data-action="recovery">重启到 Recovery</button>
-          <button class="btn btn-warning" data-action="bootloader">重启到 Bootloader</button>
+          <h3>重启</h3>
+          <div class="action-buttons">
+            <button class="btn btn-warning" data-action="normal">重启</button>
+            <button class="btn btn-warning" data-action="recovery">重启到 Recovery</button>
+            <button class="btn btn-warning" data-action="bootloader">重启到 Bootloader</button>
+            <button class="btn btn-warning" data-action="fastboot">重启到 Fastboot</button>
+          </div>
+
+          <h3>解锁命令</h3>
+          <div class="action-buttons">
+            <button id="btn-fastboot-unlock" class="btn btn-danger">flashing unlock</button>
+            <button id="btn-fastboot-unlock-oem" class="btn btn-danger">oem unlock</button>
+            <button id="btn-fastboot-lock" class="btn btn-warning">flashing lock</button>
+            <button id="btn-fastboot-lock-oem" class="btn btn-warning">oem lock</button>
+          </div>
+
+          <h3>刷入分区</h3>
+          <div class="action-buttons">
+            <button id="btn-flash-boot" class="btn btn-success" data-partition="boot">刷入 Boot</button>
+            <button id="btn-flash-initboot" class="btn btn-success" data-partition="initboot">刷入 Initboot</button>
+            <button id="btn-flash-custom" class="btn btn-success" data-partition="custom">自定义分区</button>
+          </div>
+          <div class="control-group">
+            <input type="text" id="custom-partition-name" class="input" placeholder="分区名，如: system">
+          </div>
+
+          <h3>命令行</h3>
+          <div class="control-group">
+            <input type="text" id="fastboot-cmd-input" class="input" placeholder="输入 fastboot 命令，如: devices">
+            <button id="btn-run-fastboot-cmd" class="btn btn-primary">执行</button>
+          </div>
+          <pre id="fastboot-cmd-output" class="cmd-output"></pre>
         </div>
       </section>
 

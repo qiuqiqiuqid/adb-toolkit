@@ -25,32 +25,21 @@
     "directories": {
       "output": "dist"
     },
+    "files": [
+      "src/**/*",
+      "bin/**/*"
+    ],
+    "asarUnpack": [
+      "bin/**/*"
+    ],
     "win": {
       "target": [
         {
-          "target": "nsis",
+          "target": "dir",
           "arch": ["x64"]
         }
-      ],
-      "icon": "assets/icon.ico"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true
-    },
-    "files": [
-      "src/**/*",
-      "bin/**/*",
-      "assets/**/*"
-    ],
-    "extraResources": [
-      {
-        "from": "bin",
-        "to": "bin",
-        "filter": ["**/*"]
-      }
-    ]
+      ]
+    }
   },
   "dependencies": {
     "electron-log": "^5.0.0"

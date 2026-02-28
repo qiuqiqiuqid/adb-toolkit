@@ -107,11 +107,38 @@ ipcMain.handle('adb:installApk', async (event, serial, filePath) => {
   }
 });
 
+ipcMain.handle('adb:installApks', async (event, serial, filePaths) => {
+  try {
+    return await adbClient.installApks(serial, filePaths);
+  } catch (error) {
+    log.error('Install APKs error:', error);
+    return { error: error.message };
+  }
+});
+
 ipcMain.handle('adb:uninstallPackage', async (event, serial, packageName) => {
   try {
     return await adbClient.uninstallPackage(serial, packageName);
   } catch (error) {
     log.error('Uninstall package error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('adb:uninstallPackageKeepData', async (event, serial, packageName) => {
+  try {
+    return await adbClient.uninstallPackageKeepData(serial, packageName);
+  } catch (error) {
+    log.error('Uninstall package keep data error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('adb:uninstallPackages', async (event, serial, packageNames) => {
+  try {
+    return await adbClient.uninstallPackages(serial, packageNames);
+  } catch (error) {
+    log.error('Uninstall packages error:', error);
     return { error: error.message };
   }
 });
@@ -157,6 +184,51 @@ ipcMain.handle('adb:unfreezePackage', async (event, serial, packageName) => {
     return await adbClient.unfreezePackage(serial, packageName);
   } catch (error) {
     log.error('Unfreeze package error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('adb:setScreenResolution', async (event, serial, width, height) => {
+  try {
+    return await adbClient.setScreenResolution(serial, width, height);
+  } catch (error) {
+    log.error('Set resolution error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('adb:setScreenDensity', async (event, serial, density) => {
+  try {
+    return await adbClient.setScreenDensity(serial, density);
+  } catch (error) {
+    log.error('Set density error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('adb:resetScreenResolution', async (event, serial) => {
+  try {
+    return await adbClient.resetScreenResolution(serial);
+  } catch (error) {
+    log.error('Reset resolution error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('adb:resetScreenDensity', async (event, serial) => {
+  try {
+    return await adbClient.resetScreenDensity(serial);
+  } catch (error) {
+    log.error('Reset density error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('adb:getScreenInfo', async (event, serial) => {
+  try {
+    return await adbClient.getScreenInfo(serial);
+  } catch (error) {
+    log.error('Get screen info error:', error);
     return { error: error.message };
   }
 });
@@ -224,6 +296,105 @@ ipcMain.handle('fastboot:reboot', async (event, mode) => {
   }
 });
 
+ipcMain.handle('fastboot:command', async (event, args) => {
+  try {
+    return await adbClient.fastbootCommand(args);
+  } catch (error) {
+    log.error('Fastboot command error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('fastboot:unlock', async () => {
+  try {
+    return await adbClient.fastbootUnlock();
+  } catch (error) {
+    log.error('Fastboot unlock error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('fastboot:unlockOem', async () => {
+  try {
+    return await adbClient.fastbootUnlockOem();
+  } catch (error) {
+    log.error('Fastboot OEM unlock error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('fastboot:lock', async () => {
+  try {
+    return await adbClient.fastbootLock();
+  } catch (error) {
+    log.error('Fastboot lock error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('fastboot:lockOem', async () => {
+  try {
+    return await adbClient.fastbootLockOem();
+  } catch (error) {
+    log.error('Fastboot OEM lock error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('fastboot:flashBoot', async (event, imagePath) => {
+  try {
+    return await adbClient.fastbootFlashBoot(imagePath);
+  } catch (error) {
+    log.error('Fastboot flash boot error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('fastboot:flashInitboot', async (event, imagePath) => {
+  try {
+    return await adbClient.fastbootFlashInitboot(imagePath);
+  } catch (error) {
+    log.error('Fastboot flash initboot error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('fastboot:flashPartition', async (event, partition, imagePath) => {
+  try {
+    return await adbClient.fastbootFlashPartition(partition, imagePath);
+  } catch (error) {
+    log.error('Fastboot flash partition error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('fastboot:getVar', async (event, varName) => {
+  try {
+    return await adbClient.fastbootGetVar(varName);
+  } catch (error) {
+    log.error('Fastboot getvar error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('fastboot:erasePartition', async (event, partition) => {
+  try {
+    return await adbClient.fastbootErasePartition(partition);
+  } catch (error) {
+    log.error('Fastboot erase error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('fastboot:formatPartition', async (event, partition) => {
+  try {
+    return await adbClient.fastbootFormatPartition(partition);
+  } catch (error) {
+    log.error('Fastboot format error:', error);
+    return { error: error.message };
+  }
+});
+
 ipcMain.handle('scrcpy:start', async (event, serial, options) => {
   try {
     await scrcpyController.start(serial, options);
@@ -250,6 +421,14 @@ ipcMain.handle('dialog:openFile', async (event, filters) => {
     filters: filters || []
   });
   return result.canceled ? null : result.filePaths[0];
+});
+
+ipcMain.handle('dialog:openFiles', async (event, filters) => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile', 'multiSelections'],
+    filters: filters || []
+  });
+  return result.canceled ? null : result.filePaths;
 });
 
 ipcMain.handle('dialog:saveFile', async (event, defaultPath, filters) => {

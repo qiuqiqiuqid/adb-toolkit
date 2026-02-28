@@ -5,12 +5,20 @@ contextBridge.exposeInMainWorld('api', {
     getDevices: () => ipcRenderer.invoke('adb:getDevices'),
     getDeviceInfo: (serial) => ipcRenderer.invoke('adb:getDeviceInfo', serial),
     installApk: (serial, path) => ipcRenderer.invoke('adb:installApk', serial, path),
+    installApks: (serial, paths) => ipcRenderer.invoke('adb:installApks', serial, paths),
     uninstallPackage: (serial, pkg) => ipcRenderer.invoke('adb:uninstallPackage', serial, pkg),
+    uninstallPackageKeepData: (serial, pkg) => ipcRenderer.invoke('adb:uninstallPackageKeepData', serial, pkg),
+    uninstallPackages: (serial, pkgs) => ipcRenderer.invoke('adb:uninstallPackages', serial, pkgs),
     getPackages: (serial) => ipcRenderer.invoke('adb:getPackages', serial),
     getPackageInfo: (serial, pkg) => ipcRenderer.invoke('adb:getPackageInfo', serial, pkg),
     freezePackage: (serial, pkg) => ipcRenderer.invoke('adb:freezePackage', serial, pkg),
     unfreezePackage: (serial, pkg) => ipcRenderer.invoke('adb:unfreezePackage', serial, pkg),
     screenshot: (serial, path) => ipcRenderer.invoke('adb:screenshot', serial, path),
+    setScreenResolution: (serial, w, h) => ipcRenderer.invoke('adb:setScreenResolution', serial, w, h),
+    setScreenDensity: (serial, density) => ipcRenderer.invoke('adb:setScreenDensity', serial, density),
+    resetScreenResolution: (serial) => ipcRenderer.invoke('adb:resetScreenResolution', serial),
+    resetScreenDensity: (serial) => ipcRenderer.invoke('adb:resetScreenDensity', serial),
+    getScreenInfo: (serial) => ipcRenderer.invoke('adb:getScreenInfo', serial),
     shell: (serial, cmd) => ipcRenderer.invoke('adb:shell', serial, cmd),
     reboot: (serial, mode) => ipcRenderer.invoke('adb:reboot', serial, mode),
     pushFile: (serial, local, remote) => ipcRenderer.invoke('adb:pushFile', serial, local, remote),
@@ -19,7 +27,18 @@ contextBridge.exposeInMainWorld('api', {
   },
   fastboot: {
     devices: () => ipcRenderer.invoke('fastboot:devices'),
-    reboot: (mode) => ipcRenderer.invoke('fastboot:reboot', mode)
+    reboot: (mode) => ipcRenderer.invoke('fastboot:reboot', mode),
+    command: (args) => ipcRenderer.invoke('fastboot:command', args),
+    unlock: () => ipcRenderer.invoke('fastboot:unlock'),
+    unlockOem: () => ipcRenderer.invoke('fastboot:unlockOem'),
+    lock: () => ipcRenderer.invoke('fastboot:lock'),
+    lockOem: () => ipcRenderer.invoke('fastboot:lockOem'),
+    flashBoot: (path) => ipcRenderer.invoke('fastboot:flashBoot', path),
+    flashInitboot: (path) => ipcRenderer.invoke('fastboot:flashInitboot', path),
+    flashPartition: (partition, path) => ipcRenderer.invoke('fastboot:flashPartition', partition, path),
+    getVar: (varName) => ipcRenderer.invoke('fastboot:getVar', varName),
+    erasePartition: (partition) => ipcRenderer.invoke('fastboot:erasePartition', partition),
+    formatPartition: (partition) => ipcRenderer.invoke('fastboot:formatPartition', partition)
   },
   scrcpy: {
     start: (serial, options) => ipcRenderer.invoke('scrcpy:start', serial, options),
@@ -27,6 +46,7 @@ contextBridge.exposeInMainWorld('api', {
   },
   dialog: {
     openFile: (filters) => ipcRenderer.invoke('dialog:openFile', filters),
+    openFiles: (filters) => ipcRenderer.invoke('dialog:openFiles', filters),
     saveFile: (path, filters) => ipcRenderer.invoke('dialog:saveFile', path, filters)
   },
   shell: {

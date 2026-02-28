@@ -106,6 +106,10 @@ function renderDeviceInfo(info) {
       <div class="info-value">${info.brand || 'Unknown'}</div>
     </div>
     <div class="info-item">
+      <div class="info-label">设备</div>
+      <div class="info-value">${info.device || 'Unknown'}</div>
+    </div>
+    <div class="info-item">
       <div class="info-label">Android 版本</div>
       <div class="info-value">${info.androidVersion || 'Unknown'}</div>
     </div>
@@ -118,12 +122,36 @@ function renderDeviceInfo(info) {
       <div class="info-value">${info.resolution || 'Unknown'}</div>
     </div>
     <div class="info-item">
+      <div class="info-label">显示密度</div>
+      <div class="info-value">${info.density || 'Unknown'}</div>
+    </div>
+    <div class="info-item">
       <div class="info-label">电量</div>
       <div class="info-value">${info.battery || 'Unknown'}</div>
     </div>
     <div class="info-item">
       <div class="info-label">状态</div>
       <div class="info-value">${info.state || 'Unknown'}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">序列号</div>
+      <div class="info-value">${info.serialNumber || 'Unknown'}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Bootloader</div>
+      <div class="info-value">${info.bootloader || 'Unknown'}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">CPU</div>
+      <div class="info-value">${info.cpuAbi || 'Unknown'}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">存储空间</div>
+      <div class="info-value">${info.freeStorage || 'Unknown'} / ${info.totalStorage || 'Unknown'}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">内存</div>
+      <div class="info-value">${info.freeRam || 'Unknown'} / ${info.totalRam || 'Unknown'}</div>
     </div>
   `;
 }
@@ -205,6 +233,8 @@ function renderApps(packages) {
 function initApps() {
   document.getElementById('btn-refresh-apps').addEventListener('click', loadApps);
   document.getElementById('btn-install-app').addEventListener('click', installApp);
+  document.getElementById('btn-install-apps').addEventListener('click', installApps);
+  document.getElementById('btn-batch-uninstall').addEventListener('click', batchUninstall);
   
   document.getElementById('app-search').addEventListener('input', (e) => {
     const keyword = e.target.value.toLowerCase();
@@ -231,6 +261,155 @@ async function installApp() {
     showToast('安装成功', 'success');
     loadApps();
   }
+}
+
+async function installApps() {
+  if (!currentDevice) {
+    showToast('请先选择设备', 'error');
+    return;
+  }
+  
+  const paths = await window.api.dialog.openFiles([{name: 'APK', extensions: ['apk']}]);
+  if (!paths || paths.length === 0) return;
+  
+  const progressPanel = document.getElementById('batch-progress');
+  progressPanel.style.display = 'block';
+  
+  const progressText = document.getElementById('batch-progress-text');
+  const progressBar = document.getElementById('batch-progress-bar');
+  
+  const result = await window.api.adb.installApks(currentDevice.serial, paths, (current, total, file) => {
+    progressText.textContent = `正在安装 ${file} (${current}/${total})`;
+    progressBar.style.width = `${(current / total) * 100}%`;
+  });
+  
+  progressPanel.style.display = 'none';
+  progressBar.style.width = '0%';
+  
+  let msg = `完成: ${result.results.filter(r => r.success).length}/${paths.length} 成功`;
+  showToast(msg, 'success');
+  loadApps();
+}
+
+let selectedApps = new Set();
+
+function renderApps(packages) {
+  const container = document.getElementById('apps-grid');
+  
+  if (!packages || packages.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">📦</span>
+        <p>未找到应用</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = packages.map(pkg => `
+    <div class="app-card ${selectedApps.has(pkg) ? 'selected' : ''}" data-package="${pkg}">
+      <div class="app-checkbox" data-package="${pkg}">
+        <input type="checkbox" ${selectedApps.has(pkg) ? 'checked' : ''}>
+      </div>
+      <div class="app-icon">📦</div>
+      <div class="app-name">${pkg}</div>
+      <div class="app-actions">
+        <button class="btn btn-danger btn-sm" data-action="uninstall">卸载</button>
+        <button class="btn btn-warning btn-sm" data-action="freeze">冻结</button>
+        <button class="btn btn-info btn-sm" data-action="uninstall-keep">保留数据</button>
+      </div>
+    </div>
+  `).join('');
+  
+  container.querySelectorAll('.app-checkbox').forEach(cb => {
+    cb.addEventListener('click', (e) => {
+      const pkg = cb.dataset.package;
+      if (selectedApps.has(pkg)) {
+        selectedApps.delete(pkg);
+      } else {
+        selectedApps.add(pkg);
+      }
+      renderApps(packages);
+    });
+  });
+  
+  container.querySelectorAll('[data-action="uninstall"]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const pkg = btn.closest('.app-card').dataset.package;
+      if (confirm(`确定要卸载 ${pkg} 吗?`)) {
+        const result = await window.api.adb.uninstallPackage(currentDevice.serial, pkg);
+        if (result.error) {
+          showToast('卸载失败: ' + result.error, 'error');
+        } else {
+          showToast('卸载成功', 'success');
+          loadApps();
+        }
+      }
+    });
+  });
+  
+  container.querySelectorAll('[data-action="uninstall-keep"]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const pkg = btn.closest('.app-card').dataset.package;
+      if (confirm(`确定要卸载 ${pkg} 并保留数据吗?`)) {
+        const result = await window.api.adb.uninstallPackageKeepData(currentDevice.serial, pkg);
+        if (result.error) {
+          showToast('卸载失败: ' + result.error, 'error');
+        } else {
+          showToast('卸载成功，数据已保留', 'success');
+          loadApps();
+        }
+      }
+    });
+  });
+  
+  container.querySelectorAll('[data-action="freeze"]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const pkg = btn.closest('.app-card').dataset.package;
+      const result = await window.api.adb.freezePackage(currentDevice.serial, pkg);
+      if (result.error) {
+        showToast('冻结失败: ' + result.error, 'error');
+      } else {
+        showToast('已冻结', 'success');
+      }
+    });
+  });
+}
+
+async function batchUninstall() {
+  if (!currentDevice) {
+    showToast('请先选择设备', 'error');
+    return;
+  }
+  
+  if (selectedApps.size === 0) {
+    showToast('请先选择要卸载的应用', 'error');
+    return;
+  }
+  
+  const packages = Array.from(selectedApps);
+  if (!confirm(`确定要卸载选中的 ${packages.length} 个应用吗?`)) return;
+  
+  const progressPanel = document.getElementById('batch-progress');
+  progressPanel.style.display = 'block';
+  
+  const progressText = document.getElementById('batch-progress-text');
+  const progressBar = document.getElementById('batch-progress-bar');
+  
+  const result = await window.api.adb.uninstallPackages(currentDevice.serial, packages, (current, total, pkg) => {
+    progressText.textContent = `正在卸载 ${pkg} (${current}/${total})`;
+    progressBar.style.width = `${(current / total) * 100}%`;
+  });
+  
+  progressPanel.style.display = 'none';
+  progressBar.style.width = '0%';
+  
+  selectedApps.clear();
+  showToast(result.summary, 'success');
+  loadApps();
 }
 
 async function loadFiles(path) {
@@ -307,6 +486,10 @@ async function uploadFile() {
 function initScrcpy() {
   document.getElementById('btn-start-scrcpy').addEventListener('click', startScrcpy);
   document.getElementById('btn-stop-scrcpy').addEventListener('click', stopScrcpy);
+  document.getElementById('btn-set-resolution').addEventListener('click', setResolution);
+  document.getElementById('btn-set-density').addEventListener('click', setDensity);
+  document.getElementById('btn-reset-resolution').addEventListener('click', resetResolution);
+  document.getElementById('btn-reset-density').addEventListener('click', resetDensity);
 }
 
 async function startScrcpy() {
@@ -344,6 +527,72 @@ async function stopScrcpy() {
   document.getElementById('btn-start-scrcpy').style.display = 'inline-flex';
   document.getElementById('btn-stop-scrcpy').style.display = 'none';
   document.getElementById('scrcpy-status').innerHTML = '<p>投屏已停止</p>';
+}
+
+async function setResolution() {
+  if (!currentDevice) {
+    showToast('请先选择设备', 'error');
+    return;
+  }
+  
+  const width = document.getElementById('resolution-width').value;
+  const height = document.getElementById('resolution-height').value;
+  
+  if (!width || !height) {
+    showToast('请输入分辨率', 'error');
+    return;
+  }
+  
+  const result = await window.api.adb.setScreenResolution(currentDevice.serial, width, height);
+  if (result.error) {
+    showToast('设置失败: ' + result.error, 'error');
+  } else {
+    showToast(result.message, 'success');
+    refreshDeviceInfo();
+  }
+}
+
+async function setDensity() {
+  if (!currentDevice) {
+    showToast('请先选择设备', 'error');
+    return;
+  }
+  
+  const density = document.getElementById('density-value').value;
+  
+  if (!density) {
+    showToast('请输入密度值', 'error');
+    return;
+  }
+  
+  const result = await window.api.adb.setScreenDensity(currentDevice.serial, density);
+  if (result.error) {
+    showToast('设置失败: ' + result.error, 'error');
+  } else {
+    showToast(result.message, 'success');
+    refreshDeviceInfo();
+  }
+}
+
+async function resetResolution() {
+  if (!currentDevice) return;
+  const result = await window.api.adb.resetScreenResolution(currentDevice.serial);
+  showToast(result.message, 'success');
+  refreshDeviceInfo();
+}
+
+async function resetDensity() {
+  if (!currentDevice) return;
+  const result = await window.api.adb.resetScreenDensity(currentDevice.serial);
+  showToast(result.message, 'success');
+  refreshDeviceInfo();
+}
+
+async function refreshDeviceInfo() {
+  if (currentDevice) {
+    const info = await window.api.adb.getDeviceInfo(currentDevice.serial);
+    renderDeviceInfo(info);
+  }
 }
 
 function initTools() {
@@ -444,7 +693,17 @@ function showRebootPanel(panel) {
 
 function initFastboot() {
   document.getElementById('btn-scan-fastboot').addEventListener('click', scanFastboot);
+  document.getElementById('btn-fastboot-unlock').addEventListener('click', () => fastbootAction('unlock'));
+  document.getElementById('btn-fastboot-unlock-oem').addEventListener('click', () => fastbootAction('unlock-oem'));
+  document.getElementById('btn-fastboot-lock').addEventListener('click', () => fastbootAction('lock'));
+  document.getElementById('btn-fastboot-lock-oem').addEventListener('click', () => fastbootAction('lock-oem'));
+  document.getElementById('btn-flash-boot').addEventListener('click', flashPartition);
+  document.getElementById('btn-flash-initboot').addEventListener('click', flashPartition);
+  document.getElementById('btn-flash-custom').addEventListener('click', flashPartition);
+  document.getElementById('btn-run-fastboot-cmd').addEventListener('click', runFastbootCmd);
 }
+
+let currentFastbootDevice = null;
 
 async function scanFastboot() {
   const devices = await window.api.fastboot.devices();
@@ -452,19 +711,106 @@ async function scanFastboot() {
   
   if (devices.length === 0) {
     container.innerHTML = '<p style="color: var(--text-secondary);">未检测到 Fastboot 设备</p>';
+    document.getElementById('fastboot-actions').style.display = 'none';
+    currentFastbootDevice = null;
     return;
   }
   
-  container.innerHTML = `<p>发现 ${devices.length} 个 Fastboot 设备: ${devices.join(', ')}</p>`;
+  currentFastbootDevice = devices[0];
+  container.innerHTML = `<p>发现 Fastboot 设备: ${devices.join(', ')}</p>`;
   document.getElementById('fastboot-actions').style.display = 'flex';
+  showToast('设备已连接', 'success');
+}
+
+async function fastbootAction(action) {
+  if (!currentFastbootDevice) {
+    showToast('请先扫描 Fastboot 设备', 'error');
+    return;
+  }
   
-  document.querySelectorAll('[data-action]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const action = btn.dataset.action;
-      await window.api.fastboot.reboot(action);
-      showToast('已发送命令', 'success');
-    });
-  });
+  showToast('执行中...');
+  
+  let result;
+  switch (action) {
+    case 'unlock':
+      result = await window.api.fastboot.unlock();
+      break;
+    case 'unlock-oem':
+      result = await window.api.fastboot.unlockOem();
+      break;
+    case 'lock':
+      result = await window.api.fastboot.lock();
+      break;
+    case 'lock-oem':
+      result = await window.api.fastboot.lockOem();
+      break;
+  }
+  
+  if (result.error) {
+    showToast('执行失败: ' + result.error, 'error');
+  } else {
+    showToast('执行成功', 'success');
+  }
+}
+
+async function flashPartition() {
+  if (!currentFastbootDevice) {
+    showToast('请先扫描 Fastboot 设备', 'error');
+    return;
+  }
+  
+  const btn = event.target;
+  const partition = btn.dataset.partition;
+  
+  let imagePath;
+  if (partition === 'custom') {
+    const customPartition = document.getElementById('custom-partition-name').value;
+    if (!customPartition) {
+      showToast('请输入分区名称', 'error');
+      return;
+    }
+    imagePath = await window.api.dialog.openFile([{name: 'Image', extensions: ['img']}]);
+    if (!imagePath) return;
+    partition = customPartition;
+  } else {
+    imagePath = await window.api.dialog.openFile([{name: 'Image', extensions: ['img']}]);
+    if (!imagePath) return;
+  }
+  
+  showToast('正在刷入...');
+  
+  const result = await window.api.fastboot.flashPartition(partition, imagePath);
+  
+  if (result.error) {
+    showToast('刷入失败: ' + result.error, 'error');
+  } else {
+    showToast('刷入成功', 'success');
+  }
+}
+
+async function runFastbootCmd() {
+  if (!currentFastbootDevice) {
+    showToast('请先扫描 Fastboot 设备', 'error');
+    return;
+  }
+  
+  const cmd = document.getElementById('fastboot-cmd-input').value;
+  if (!cmd) {
+    showToast('请输入命令', 'error');
+    return;
+  }
+  
+  const output = document.getElementById('fastboot-cmd-output');
+  output.textContent = '执行中...';
+  
+  const args = cmd.split(' ').filter(a => a.trim());
+  const result = await window.api.fastboot.command(args);
+  
+  if (result.error) {
+    output.textContent = '错误: ' + result.error;
+  } else {
+    output.textContent = result.output;
+  }
 }
 
 function showToast(message, type = 'info') {
