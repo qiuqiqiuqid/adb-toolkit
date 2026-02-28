@@ -23,7 +23,8 @@ contextBridge.exposeInMainWorld('api', {
     reboot: (serial, mode) => ipcRenderer.invoke('adb:reboot', serial, mode),
     pushFile: (serial, local, remote) => ipcRenderer.invoke('adb:pushFile', serial, local, remote),
     pullFile: (serial, remote, local) => ipcRenderer.invoke('adb:pullFile', serial, remote, local),
-    listFiles: (serial, path) => ipcRenderer.invoke('adb:listFiles', serial, path)
+    listFiles: (serial, path) => ipcRenderer.invoke('adb:listFiles', serial, path),
+    listFilesRoot: (serial, remotePath) => ipcRenderer.invoke('adb:listFilesRoot', serial, remotePath)
   },
   fastboot: {
     devices: () => ipcRenderer.invoke('fastboot:devices'),

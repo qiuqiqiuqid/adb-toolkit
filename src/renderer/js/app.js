@@ -1,5 +1,109 @@
 let currentDevice = null;
 let lastWirelessAddr = null;
+// Bind device-specific controls (root, wireless, reboot) for a given serial
+function bindDeviceControls(serial, info) {
+  // Root toggle
+  const rootToggle = document.getElementById('root-toggle');
+  if (rootToggle) {
+    rootToggle.dataset.serial = serial || '';
+    rootToggle.checked = !!(rootState[serial]?.enabled);
+    // Bind once to avoid duplicate handlers on repeated device switches
+    if (!rootToggle.dataset.bound) {
+      const handler = async (e) => {
+        if (e.target.checked) {
+          const r = await window.api.adb.rootEnable(serial);
+          if (r && r.enabled) {
+            rootState[serial] = rootState[serial] || {};
+            rootState[serial].enabled = true;
+            showToast('Root 已启用', 'success');
+          } else {
+            e.target.checked = false;
+            showToast('无法启用 Root: ' + (r?.message || ''), 'error');
+          }
+        } else {
+          rootState[serial] = rootState[serial] || {};
+          rootState[serial].enabled = false;
+          showToast('Root 已禁用', 'info');
+        }
+      };
+      rootToggle.addEventListener('change', handler);
+      rootToggle.dataset.bound = '1';
+      window.__rootToggleHandler = handler;
+    } else {
+      // If rebind is needed, use the previously attached handler
+    }
+  }
+
+  // Reboot
+  const rebootBtn = document.getElementById('btn-reboot');
+  if (rebootBtn) {
+    rebootBtn.disabled = false;
+    if (!rebootBtn.dataset.bound) {
+      rebootBtn.addEventListener('click', async () => {
+        try {
+          await window.api.adb.reboot(serial, 'normal');
+          showToast('正在重启设备', 'success');
+        } catch (err) {
+          showToast('重启失败: ' + (err?.message || err), 'error');
+        }
+      });
+      rebootBtn.dataset.bound = '1';
+    }
+  }
+
+  // Wireless controls
+  const wEnable = document.getElementById('btn-wireless-enable');
+  const wConnect = document.getElementById('btn-wireless-connect');
+  const wDisconnect = document.getElementById('btn-wireless-disconnect');
+  const wPort = document.getElementById('wireless-port');
+  const wIp = document.getElementById('wireless-ip');
+  if (wEnable) {
+    if (!wEnable.dataset.bound) {
+      wEnable.addEventListener('click', async () => {
+        const portVal = wPort?.value || '5555';
+        const r = await window.api.adb.enableWireless(serial, parseInt(portVal, 10));
+        if (r && r.success) { showToast('无线启用成功', 'success'); }
+        else { showToast('无线启用失败: ' + (r?.error ?? ''), 'error'); }
+      });
+      wEnable.dataset.bound = '1';
+    }
+  }
+  if (wConnect) {
+    if (!wConnect.dataset.bound) {
+      wConnect.addEventListener('click', async () => {
+        const ip = wIp?.value;
+        const portVal = wPort?.value || '5555';
+        if (!ip) { showToast('请填写设备 IP', 'error'); return; }
+        const r = await window.api.adb.connectWireless(ip, parseInt(portVal, 10));
+        if (r && r.success) {
+          showToast('无线连接已建立', 'success');
+          lastWirelessAddr = `${ip}:${portVal}`;
+        } else {
+          showToast('无线连接失败: ' + (r?.error ?? ''), 'error');
+        }
+      });
+      wConnect.dataset.bound = '1';
+    }
+  }
+  if (wDisconnect) {
+    if (!wDisconnect.dataset.bound) {
+      wDisconnect.addEventListener('click', async () => {
+        if (lastWirelessAddr) {
+          const r = await window.api.adb.disconnectWireless(lastWirelessAddr);
+          if (r && r.success) {
+            showToast('无线断开', 'success');
+            lastWirelessAddr = null;
+          } else {
+            showToast('断开失败: ' + (r?.error ?? ''), 'error');
+          }
+        } else {
+          showToast('当前无无线连接', 'info');
+        }
+      });
+      wDisconnect.dataset.bound = '1';
+    }
+  }
+}
 let currentPath = '/sdcard';
 let scrcpyRunning = false;
 let appsCache = [];
@@ -7,15 +111,23 @@ let appsCache = [];
 let rootState = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  initNavigation();
-  initDeviceList();
-  initApps();
-  initFiles();
-  initScrcpy();
-  initTools();
-  initFastboot();
+  try {
+    initNavigation();
+    initDeviceList();
+    initApps();
+    initFiles();
+    initScrcpy();
+    initTools();
+    initFastboot();
+  } catch (e) {
+    console.error('Initialization error:', e);
+    showToast('初始化异常，请查看控制台', 'error');
+  }
   
   setInterval(refreshDevices, 5000);
+  window.addEventListener('error', (ev) => {
+    console.error('Unhandled error:', ev.error || ev);
+  });
 });
 
 function initNavigation() {
@@ -257,7 +369,7 @@ function renderDeviceInfo(info) {
     <div class="info-item">
       <div class="info-label">Root 模式</div>
       <div class="info-value" id="root-toggle-container">
-        <input type="checkbox" id="root-toggle" data-serial="${info.serial || ''}"> 启用 Root
+        <input type="checkbox" id="root-toggle" data-serial="${info?.serial || currentDevice?.serial || ''}"> 启用 Root
       </div>
     </div>
     <div class="info-item">
