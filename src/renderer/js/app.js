@@ -660,6 +660,9 @@ async function openTool(tool) {
     case 'reboot':
       showRebootPanel(panel);
       break;
+    case 'shizuku':
+      showShizukuPanel(panel);
+      break;
   }
 }
 
@@ -726,6 +729,26 @@ function showRebootPanel(panel) {
       document.getElementById('device-info').style.display = 'none';
       refreshDevices();
     });
+  });
+}
+
+async function showShizukuPanel(panel) {
+  panel.innerHTML = `
+    <div class=\"tool-panel-header\"><h3 class=\"tool-panel-title\">Shizuku 激活</h3></div>
+    <div style=\"display:flex; align-items:center; gap:10px;\">
+      <button id=\"btn-shizuku-activate\" class=\"btn btn-primary\">激活 Shizuku</button>
+      <span id=\"shizuku-status\" class=\"info-value\"></span>
+    </div>
+  `;
+  document.getElementById('btn-shizuku-activate').addEventListener('click', async () => {
+    if (!currentDevice) { showToast('请先选择设备', 'error'); return; }
+    const res = await window.api.shizuku.activate(currentDevice.serial);
+    const status = document.getElementById('shizuku-status');
+    if (res && res.success) {
+      status.textContent = res.output || '激活请求已发送';
+    } else {
+      status.textContent = '激活失败: ' + (res?.error || '未知错误');
+    }
   });
 }
 

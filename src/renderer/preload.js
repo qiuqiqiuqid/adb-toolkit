@@ -52,6 +52,11 @@ contextBridge.exposeInMainWorld('api', {
     pushFile: (serial, local, remote) => ipcRenderer.invoke('adb:pushFileRoot', serial, local, remote),
     listFiles: (serial, remote) => ipcRenderer.invoke('adb:listFilesRoot', serial, remote)
   },
+  wireless: {
+    enable: (serial, port) => ipcRenderer.invoke('adb:enableWireless', serial, port),
+    connect: (target, port) => ipcRenderer.invoke('adb:connectWireless', target, port),
+    disconnect: (addr) => ipcRenderer.invoke('adb:disconnectWireless', addr)
+  },
   dialog: {
     openFile: (filters) => ipcRenderer.invoke('dialog:openFile', filters),
     openFiles: (filters) => ipcRenderer.invoke('dialog:openFiles', filters),
@@ -59,5 +64,9 @@ contextBridge.exposeInMainWorld('api', {
   },
   shell: {
     openPath: (path) => ipcRenderer.invoke('shell:openPath', path)
+  }
+  ,
+  shizuku: {
+    activate: (serial) => ipcRenderer.invoke('adb:activateShizuku', serial)
   }
 });

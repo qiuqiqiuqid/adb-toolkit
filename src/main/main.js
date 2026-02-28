@@ -98,6 +98,33 @@ ipcMain.handle('adb:getDeviceInfo', async (event, serial) => {
   }
 });
 
+ipcMain.handle('adb:enableWireless', async (event, serial, port) => {
+  try {
+    return await adbClient.enableWireless(serial, port);
+  } catch (error) {
+    log.error('Enable wireless error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('adb:connectWireless', async (event, target, port) => {
+  try {
+    return await adbClient.connectWireless(target, port);
+  } catch (error) {
+    log.error('Connect wireless error:', error);
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('adb:disconnectWireless', async (event, addr) => {
+  try {
+    return await adbClient.disconnectWireless(addr);
+  } catch (error) {
+    log.error('Disconnect wireless error:', error);
+    return { error: error.message };
+  }
+});
+
 // Root related IPCs
 ipcMain.handle('adb:rootEnable', async (event, serial) => {
   try {
@@ -483,6 +510,15 @@ ipcMain.handle('dialog:saveFile', async (event, defaultPath, filters) => {
     filters: filters || []
   });
   return result.canceled ? null : result.filePath;
+});
+
+ipcMain.handle('adb:activateShizuku', async (event, serial) => {
+  try {
+    return await adbClient.activateShizuku(serial);
+  } catch (error) {
+    log.error('Shizuku activate error:', error);
+    return { error: error.message };
+  }
 });
 
 ipcMain.handle('shell:openPath', async (event, filePath) => {

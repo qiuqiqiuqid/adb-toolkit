@@ -10,6 +10,8 @@ class AdbClient {
     // Root feature state per device
     this.rootCapability = {}; // whether device can be root (su) on this board
     this.rootEnabled = {}; // whether user enabled root for this device
+    // Wireless feature (ADB over Wi-Fi)
+    this.wirelessCache = {}; // map serial/ip to status
   }
 
   async runCommand(cmd, args = [], options = {}) {
@@ -31,6 +33,40 @@ class AdbClient {
 
       proc.on('error', (err) => { reject(err); });
     });
+  }
+
+  // Wireless helper methods
+  async enableWireless(serial, port = 5555) {
+    try {
+      const out = await this.runCommand(this.adbPath, ['-s', serial, 'tcpip', String(port)]);
+      this.wirelessCache[serial] = { connected: false, port };
+      return { success: true, output: out };
+    } catch (err) {
+      return { success: false, error: String(err) };
+    }
+  }
+
+  async connectWireless(target, port = 5555) {
+    // target can be an IP address
+    try {
+      const host = typeof target === 'string' ? target : String(target);
+      const addr = `${host}:${port}`;
+      const out = await this.runCommand(this.adbPath, ['connect', addr]);
+      this.wirelessCache[addr] = { connected: true, port };
+      return { success: true, output: out };
+    } catch (err) {
+      return { success: false, error: String(err) };
+    }
+  }
+
+  async disconnectWireless(addr) {
+    try {
+      const out = await this.runCommand(this.adbPath, ['disconnect', addr]);
+      delete this.wirelessCache[addr];
+      return { success: true, output: out };
+    } catch (err) {
+      return { success: false, error: String(err) };
+    }
   }
 
   // Root related helpers
@@ -409,6 +445,31 @@ class AdbClient {
     const modes = { fastboot: [], recovery: ['recovery'], bootloader: ['bootloader'] };
     await this.runCommand(this.fastbootPath, ['reboot', ...(modes[mode] || [])]);
     return { success: true };
+  }
+
+  async activateShizuku(serial) {
+    // Check if Shizuku is installed
+    try {
+      const list = await this.runCommand(this.adbPath, ['-s', serial, 'shell', 'pm', 'list', 'packages', 'moe.shizuku']);
+      if (!list || !list.includes('moe.shizuku')) {
+        return { success: false, message: 'Shizuku 未安装' };
+      }
+      // Try privileged service start first
+      try {
+        const out = await this.runCommand(this.adbPath, ['-s', serial, 'shell', 'am', 'startservice', 'moe.shizuku.server/.ShizukuService']);
+        return { success: true, output: out };
+      } catch {
+        // Fallback to attempting to start the main activity
+        try {
+          const out2 = await this.runCommand(this.adbPath, ['-s', serial, 'shell', 'am', 'start', '-n', 'moe.shizuku.privileged.api/.MainActivity']);
+          return { success: true, output: out2 };
+        } catch (err) {
+          return { success: false, error: err.message };
+        }
+      }
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
   }
 
   async fastbootErasePartition(partition) {
