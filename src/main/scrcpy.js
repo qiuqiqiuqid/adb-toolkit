@@ -1,11 +1,22 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 const log = require('electron-log');
 
 class ScrcpyController {
   constructor(binPath) {
     this.binPath = binPath;
-    this.scrcpyPath = path.join(binPath, 'scrcpy', 'scrcpy-win64-v3.3.4', 'scrcpy.exe');
+    // Resolve scrcpy binary with a safe fallback strategy
+    const primaryPath = path.join(binPath, 'scrcpy', 'scrcpy-win64-v3.3.4', 'scrcpy.exe');
+    const secondaryPath = path.join(binPath, 'scrcpy', 'scrcpy-win64-v3.3.0', 'scrcpy.exe');
+    if (fs.existsSync(primaryPath)) {
+      this.scrcpyPath = primaryPath;
+    } else if (fs.existsSync(secondaryPath)) {
+      this.scrcpyPath = secondaryPath;
+    } else {
+      // Fall back to system PATH if binaries are not found in expected locations
+      this.scrcpyPath = 'scrcpy.exe';
+    }
     this.process = null;
     this.running = false;
   }
@@ -20,6 +31,7 @@ class ScrcpyController {
       '--window-title', options.title || 'ADB Toolbox - Screen Mirror',
       '--turn-screen-off',
       '--stay-awake',
+      '--always-on-top',
       '--max-fps', String(options.fps || 60),
       '--video-bit-rate', `${options.bitrate || 8}M`,
       '-m', String(options.maxSize || 1920),

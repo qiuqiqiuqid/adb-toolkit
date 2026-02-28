@@ -1,4 +1,5 @@
 let currentDevice = null;
+let lastWirelessAddr = null;
 let currentPath = '/sdcard';
 let scrcpyRunning = false;
 let appsCache = [];
@@ -96,7 +97,91 @@ async function selectDevice(serial) {
     rootState[serial].available = false;
   }
   renderDeviceInfo(info);
-  
+
+  // Bind Root toggle and Wireless controls and Reboot button for current device
+  // Root toggle: persistent listener per device
+  const rootToggle = document.getElementById('root-toggle');
+  if (rootToggle) {
+    // Ensure serial is bound to the control
+    rootToggle.dataset.serial = info.serial || serial;
+    rootToggle.checked = !!(rootState[info.serial]?.enabled);
+    rootToggle.onchange = async (e) => {
+      const s = e.currentTarget.dataset.serial || info.serial;
+      if (e.target.checked) {
+        const r = await window.api.adb.rootEnable(s);
+        if (r && r.enabled) {
+          rootState[s] = rootState[s] || {};
+          rootState[s].enabled = true;
+          showToast('Root 已启用', 'success');
+        } else {
+          e.target.checked = false;
+          showToast('无法启用 Root: ' + (r?.message || ''), 'error');
+        }
+      } else {
+        rootState[s] = rootState[s] || {};
+        rootState[s].enabled = false;
+        showToast('Root 已禁用', 'info');
+      }
+    };
+  }
+
+  // Reboot button
+  const rebootBtn = document.getElementById('btn-reboot');
+  if (rebootBtn) {
+    rebootBtn.onclick = async () => {
+      try {
+        await window.api.adb.reboot(info.serial, 'normal');
+        showToast('正在重启设备', 'success');
+      } catch (err) {
+        showToast('重启失败: ' + (err?.message || err), 'error');
+      }
+    };
+  }
+
+  // Wireless controls
+  const wIp = document.getElementById('wireless-ip');
+  const wPort = document.getElementById('wireless-port');
+  const wEnable = document.getElementById('btn-wireless-enable');
+  const wConnect = document.getElementById('btn-wireless-connect');
+  const wDisconnect = document.getElementById('btn-wireless-disconnect');
+  if (wEnable) {
+    wEnable.onclick = async () => {
+      const portVal = wPort?.value || '5555';
+      const r = await window.api.adb.enableWireless(info.serial, parseInt(portVal, 10));
+      if (r && r.success) { showToast('无线启用成功', 'success'); }
+      else { showToast('无线启用失败: ' + (r?.error ?? ''), 'error'); }
+    };
+  }
+  if (wConnect) {
+    wConnect.onclick = async () => {
+      const ip = wIp?.value;
+      const portVal = wPort?.value || '5555';
+      if (!ip) { showToast('请填写设备 IP', 'error'); return; }
+      const r = await window.api.adb.connectWireless(ip, parseInt(portVal, 10));
+      if (r && r.success) {
+        showToast('无线连接已建立', 'success');
+        lastWirelessAddr = `${ip}:${portVal}`;
+      } else {
+        showToast('无线连接失败: ' + (r?.error ?? ''), 'error');
+      }
+    };
+  }
+  if (wDisconnect) {
+    wDisconnect.onclick = async () => {
+      if (typeof lastWirelessAddr !== 'undefined' && lastWirelessAddr) {
+        const r = await window.api.adb.disconnectWireless(lastWirelessAddr);
+        if (r && r.success) {
+          showToast('无线断开', 'success');
+          lastWirelessAddr = null;
+        } else {
+          showToast('断开失败: ' + (r?.error ?? ''), 'error');
+        }
+      } else {
+        showToast('当前无无线连接', 'info');
+      }
+    };
+  }
+
   showToast('已选择设备', 'success');
   // Bind root toggle if present
   const rootToggle = document.getElementById('root-toggle');
@@ -172,7 +257,23 @@ function renderDeviceInfo(info) {
     <div class="info-item">
       <div class="info-label">Root 模式</div>
       <div class="info-value" id="root-toggle-container">
-        <input type="checkbox" id="root-toggle"> 启用 Root
+        <input type="checkbox" id="root-toggle" data-serial="${info.serial || ''}"> 启用 Root
+      </div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">无线调试</div>
+      <div class="info-value" id="wireless-controls" style="display:flex; gap:8px; align-items:center;">
+        <input id="wireless-ip" class="input" placeholder="设备IP" style="width:140px;">
+        <input id="wireless-port" class="input" placeholder="端口" value="5555" style="width:90px;">
+        <button id="btn-wireless-enable" class="btn btn-secondary">启用无线</button>
+        <button id="btn-wireless-connect" class="btn btn-secondary">连接</button>
+        <button id="btn-wireless-disconnect" class="btn btn-secondary">断开</button>
+      </div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">操作</div>
+      <div class="info-value">
+        <button id="btn-reboot" class="btn btn-warning">重启设备</button>
       </div>
     </div>
     <div class="info-item">
@@ -456,7 +557,10 @@ async function loadFiles(path) {
   currentPath = path;
   document.getElementById('breadcrumbs').innerHTML = `<span>${path}</span>`;
   
-  const files = await window.api.adb.listFiles(currentDevice.serial, path);
+  const serial = currentDevice?.serial;
+  const files = await (rootState[serial]?.enabled
+    ? window.api.adb.listFilesRoot(serial, path)
+    : window.api.adb.listFiles(serial, path));
   renderFiles(files);
 }
 
@@ -814,14 +918,15 @@ async function fastbootAction(action) {
   }
 }
 
-async function flashPartition() {
+async function flashPartition(event) {
   if (!currentFastbootDevice) {
     showToast('请先扫描 Fastboot 设备', 'error');
     return;
   }
   
-  const btn = event.target;
-  const partition = btn.dataset.partition;
+  // Use the element that triggered the click to determine the partition
+  const btn = event?.currentTarget;
+  let partition = btn?.dataset?.partition;
   
   let imagePath;
   if (partition === 'custom') {

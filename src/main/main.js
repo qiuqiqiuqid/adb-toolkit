@@ -315,6 +315,16 @@ ipcMain.handle('adb:listFiles', async (event, serial, remotePath) => {
   }
 });
 
+// List files with root privileges (if enabled)
+ipcMain.handle('adb:listFilesRoot', async (event, serial, remotePath) => {
+  try {
+    return await adbClient.listFilesRoot(serial, remotePath);
+  } catch (error) {
+    log.error('List files root error:', error);
+    return { error: error.message };
+  }
+});
+
 ipcMain.handle('adb:shell', async (event, serial, command) => {
   try {
     return await adbClient.shell(serial, command);
